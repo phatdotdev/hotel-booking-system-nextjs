@@ -1,16 +1,25 @@
 import mongoose, { Schema, models, model } from "mongoose";
 
-const EmailVerificationSchema = new Schema(
+export interface IEmailVerification {
+  email: string;
+  otpHash: string;
+  expiresAt: Date;
+  attempts: number;
+  verifiedAt: Date | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+const EmailVerificationSchema = new Schema<IEmailVerification>(
   {
     email: {
       type: String,
       required: true,
       lowercase: true,
       trim: true,
-      index: true,
     },
 
-    codeHash: {
+    otpHash: {
       type: String,
       required: true,
     },
@@ -41,6 +50,6 @@ EmailVerificationSchema.index({ email: 1 }, { unique: true });
 
 const EmailVerification =
   models.EmailVerification ||
-  model("EmailVerification", EmailVerificationSchema);
+  model<IEmailVerification>("EmailVerification", EmailVerificationSchema);
 
 export default EmailVerification;

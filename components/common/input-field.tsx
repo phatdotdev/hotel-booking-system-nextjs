@@ -1,65 +1,112 @@
-import { ComponentPropsWithoutRef } from "react";
+"use client";
 
-type InputFieldProps = {
+import {
+  forwardRef,
+  useId,
+  type InputHTMLAttributes,
+  type ReactNode,
+} from "react";
+
+type InputFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, "size"> & {
   label?: string;
   error?: string;
-} & ComponentPropsWithoutRef<"input">;
+  hint?: string;
+  leftIcon?: ReactNode;
+  rightIcon?: ReactNode;
+  wrapperClassName?: string;
+};
 
-export default function InputField({
-  label,
-  id,
-  type = "text",
-  className = "",
-  error,
-  disabled,
-  ...props
-}: InputFieldProps) {
-  return (
-    <div className="w-full">
-      {label && (
-        <label
-          htmlFor={id}
-          className="mb-1.5 block text-sm font-medium text-foreground"
-        >
-          {label}
-        </label>
-      )}
+const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
+  (
+    {
+      id,
+      label,
+      error,
+      hint,
+      leftIcon,
+      rightIcon,
+      required,
+      disabled,
+      className = "",
+      wrapperClassName = "",
+      ...props
+    },
+    ref,
+  ) => {
+    const generatedId = useId();
+    const inputId = id ?? generatedId;
+    const messageId = `${inputId}-message`;
 
-      <input
-        id={id}
-        type={type}
-        disabled={disabled}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? `${id}-error` : undefined}
-        className={`
-          block h-10 w-full rounded-lg border
-          bg-background px-3 text-sm text-foreground
-          shadow-sm
-          placeholder:text-muted-foreground
-          transition-all duration-200
+    return (
+      <div className={`w-full space-y-1.5 ${wrapperClassName}`}>
+        {label && (
+          <label
+            htmlFor={inputId}
+            className="block text-sm font-medium text-gray-700"
+          >
+            {label}
+            {required && (
+              <span className="ml-1 text-red-500" aria-hidden="true">
+                *
+              </span>
+            )}
+          </label>
+        )}
 
-          ${
-            error
-              ? "border-destructive focus:border-destructive focus:ring-2 focus:ring-destructive/20"
-              : "border-border hover:border-muted-foreground/50 focus:border-primary focus:ring-2 focus:ring-primary/20"
-          }
+        <div className="relative">
+          {leftIcon && (
+            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
+              {leftIcon}
+            </span>
+          )}
 
-          focus:outline-none
+          <input
+            {...props}
+            ref={ref}
+            id={inputId}
+            required={required}
+            disabled={disabled}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error || hint ? messageId : undefined}
+            className={`
+              block w-full rounded-lg border bg-white px-3 py-2.5
+              text-sm text-gray-900 outline-none transition
+              placeholder:text-gray-400
+              focus:border-blue-500 focus:ring-2 focus:ring-blue-100
+              disabled:cursor-not-allowed disabled:bg-gray-100
+              disabled:text-gray-500
+              ${leftIcon ? "pl-10" : ""}
+              ${rightIcon ? "pr-10" : ""}
+              ${
+                error
+                  ? "border-red-400 focus:border-red-500 focus:ring-red-100"
+                  : "border-gray-300"
+              }
+              ${className}
+            `}
+          />
 
-          disabled:cursor-not-allowed
-          disabled:opacity-50
-          disabled:bg-muted
+          {rightIcon && (
+            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
+              {rightIcon}
+            </span>
+          )}
+        </div>
 
-          ${className}
-        `}
-        {...props}
-      />
+        {(error || hint) && (
+          <p
+            id={messageId}
+            role={error ? "alert" : undefined}
+            className={`text-xs ${error ? "text-red-600" : "text-gray-500"}`}
+          >
+            {error || hint}
+          </p>
+        )}
+      </div>
+    );
+  },
+);
 
-      {error && (
-        <p id={`${id}-error`} className="mt-1.5 text-xs text-destructive">
-          {error}
-        </p>
-      )}
-    </div>
-  );
-}
+InputField.displayName = "InputField";
+
+export default InputField;

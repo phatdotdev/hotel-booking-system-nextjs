@@ -2,60 +2,63 @@ import { Schema, model, models } from "mongoose";
 
 const HotelSchema = new Schema(
   {
-    ownerId: {
+    partnerId: {
       type: Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Partner",
       required: true,
       index: true,
     },
-    name: { type: String, required: true, trim: true },
-    slug: {
+
+    name: {
       type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
+      required: [true, "Hotel name is required."],
       trim: true,
+      maxlength: [200, "Hotel name cannot exceed 200 characters."],
     },
-    description: { type: String, default: "" },
-    starRating: { type: Number, min: 1, max: 5, default: 3 },
+
+    description: {
+      type: String,
+      trim: true,
+      default: "",
+      maxlength: [5000, "Description cannot exceed 5000 characters."],
+    },
+
+    phone: {
+      type: String,
+      trim: true,
+      default: "",
+      maxlength: [20, "Phone number cannot exceed 20 characters."],
+    },
+
+    country: {
+      type: String,
+      trim: true,
+      required: [true, "Country is required."],
+      maxlength: [100, "Country cannot exceed 100 characters."],
+    },
+
+    city: {
+      type: String,
+      trim: true,
+      required: [true, "City is required."],
+      maxlength: [100, "City cannot exceed 100 characters."],
+    },
+
     address: {
-      street: { type: String, required: true },
-      ward: { type: String, default: "" },
-      district: { type: String, required: true },
-      city: { type: String, required: true },
-      country: { type: String, default: "Vietnam" },
+      type: String,
+      trim: true,
+      required: [true, "Hotel address is required."],
+      maxlength: [255, "Address cannot exceed 255 characters."],
     },
-    location: {
-      type: {
-        type: String,
-        enum: ["Point"],
-        default: "Point",
-      },
-      coordinates: {
-        type: [Number],
-        required: true,
-      },
-    },
-    amenities: [{ type: String }],
-    images: [{ type: String }],
-    rules: {
-      checkInTime: { type: String, default: "14:00" },
-      checkOutTime: { type: String, default: "12:00" },
-      cancellationPolicy: { type: String, default: "" },
-    },
-    ratingAvg: { type: Number, default: 0, min: 0, max: 5 },
-    reviewCount: { type: Number, default: 0 },
+
     status: {
       type: String,
-      enum: ["PENDING", "APPROVED", "SUSPENDED"],
-      default: "PENDING",
-      index: true,
+      enum: ["DRAFT", "PENDING", "ACTIVE", "REJECTED"],
+      default: "DRAFT",
+      required: true,
     },
   },
   { timestamps: true },
 );
-
-HotelSchema.index({ location: "2dsphere" });
-HotelSchema.index({ status: 1, ratingAvg: -1 });
 
 export const Hotel = models.Hotel || model("Hotel", HotelSchema);

@@ -1,0 +1,27 @@
+### 1. Lấy CSRF Token
+# @name getCsrf
+GET http://localhost:3000/api/auth/csrf
+Content-Type: application/json
+
+### 2. Thử nghiệm Đăng nhập Credentials
+POST http://localhost:3000/api/auth/callback/credentials
+Content-Type: application/x-www-form-urlencoded
+
+csrfToken={{getCsrf.response.body.csrfToken}}
+&email=dtphat.dev@gmail.com
+&password=123456
+&json=true
+
+### 3. Đăng ký Partner mới
+POST http://localhost:3000/api/partners
+Content-Type: application/json
+
+{
+  "partnerType": "BUSINESS",
+  "businessName": "ABC Hotel Group",
+  "representativeName": "Nguyen Van A",
+  "phone": "0901234567",
+  "country": "Vietnam",
+  "city": "Can Tho",
+  "address": "123 Nguyen Trai"
+}

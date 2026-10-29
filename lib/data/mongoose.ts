@@ -8,7 +8,7 @@ if (!MONGODB_URI) {
 
 let cached = (global as any).mongoose || { conn: null, promise: null };
 
-export async function connectToDatabase() {
+export const connectDB = async () => {
   if (cached.conn) return cached.conn;
   if (!cached.promise) {
     cached.promise = mongoose
@@ -20,4 +20,4 @@ export async function connectToDatabase() {
   cached.conn = await cached.promise;
   (global as any).mongoose = cached;
   return cached.conn;
-}
+};

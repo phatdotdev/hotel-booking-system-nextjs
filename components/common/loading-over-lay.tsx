@@ -1,30 +1,43 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
-interface LoadingOverlayProps {
-  isLoading?: boolean;
-  text?: string;
+import { LoaderCircle } from "lucide-react";
+
+type LoadingOverlayProps = {
+  isLoading: boolean;
+  message?: string;
+  fullScreen?: boolean;
   className?: string;
-}
+};
 
 export default function LoadingOverlay({
-  text = "Loading...",
+  isLoading,
+  message = "Đang xử lý...",
+  fullScreen = false,
   className = "",
 }: LoadingOverlayProps) {
+  if (!isLoading) return null;
+
   return (
     <div
-      className={`flex flex-col items-center justify-center min-h-[300px]
-        bg-background/70 backdrop-blur-sm transition-all duration-300 ${className}`}
+      className={[
+        "z-50 flex items-center justify-center",
+        "bg-white/70 backdrop-blur-[2px]",
+        fullScreen ? "fixed inset-0" : "absolute inset-0",
+        className,
+      ].join(" ")}
+      role="status"
+      aria-live="polite"
+      aria-label={message}
     >
-      <div className="flex flex-col items-center gap-3 p-4 rounded-xl">
-        {/* Spinner Icon */}
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex flex-col items-center gap-3 rounded-xl bg-white px-7 py-6 shadow-lg">
+        <LoaderCircle
+          size={38}
+          strokeWidth={2.5}
+          className="animate-spin text-blue-600"
+          aria-hidden="true"
+        />
 
-        {text && (
-          <p className="text-sm font-medium text-muted-foreground animate-pulse">
-            {text}
-          </p>
-        )}
+        <p className="text-sm font-medium text-gray-700">{message}</p>
       </div>
     </div>
   );

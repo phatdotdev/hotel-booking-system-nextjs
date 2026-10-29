@@ -1,72 +1,90 @@
 "use server";
 
+import { createHash, randomInt } from "node:crypto";
 import bcrypt from "bcryptjs";
-import { connectToDatabase } from "@/lib/data/mongoose";
+
 import { User } from "@/models/User";
+import { connectDB } from "@/lib/data/mongoose";
 import EmailVerification from "@/models/EmailVerification";
-import { createSession, deleteSession } from "@/lib/auth/session";
-import { createHash, randomInt } from "crypto";
 import { sendVerificationEmail } from "@/lib/email/mailer";
 
-// REGISTER
-
-function normalizeEmail(email: string) {
-  return email.trim().toLowerCase();
-}
-
-function generateOTP() {
-  return randomInt(100000, 1000000).toString();
-}
-
-function hashOTP(email: string, code: string) {
-  return createHash("sha256").update(`${email}:${code}`).digest("hex");
-}
-
-export interface SendVerificationState {
+type ActionState = {
   success: boolean;
   message: string;
+} | null;
+
+const OTP_TTL_MS = 5 * 60 * 1000;
+const RESEND_COOLDOWN_MS = 60 * 1000;
+const MAX_OTP_ATTEMPTS = 5;
+const VERIFIED_TTL_MS = 15 * 60 * 1000;
+
+function normalizeEmail(value: FormDataEntryValue | null) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase();
 }
 
+function hashCode(code: string) {
+  return createHash("sha256").update(code).digest("hex");
+}
+
+function isValidEmail(email: string) {
+  return email.length <= 255 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+// ======================================================
+// STEP 1: SEND OTP
+// ======================================================
+
 export async function sendVerificationAction(
-  prevState: SendVerificationState | null,
+  _prevState: ActionState,
   formData: FormData,
-): Promise<SendVerificationState> {
+): Promise<ActionState> {
+  const email = normalizeEmail(formData.get("email"));
+
+  if (!isValidEmail(email)) {
+    return {
+      success: false,
+      message: "Please enter a valid email address.",
+    };
+  }
+
   try {
-    await connectToDatabase();
+    await connectDB();
 
-    const email = normalizeEmail(String(formData.get("email") || ""));
-
-    if (!email) {
-      return {
-        success: false,
-        message: "Please enter your email!",
-      };
-    }
-
-    // Kiểm tra email đã đăng ký
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email }).select("_id").lean();
 
     if (existingUser) {
       return {
         success: false,
-        message: "This email has already been used!",
+        message: "Unable to register with this email address.",
       };
     }
 
-    // Tạo OTP
-    const code = generateOTP();
+    const existingVerification = await EmailVerification.findOne({ email });
 
-    const codeHash = hashOTP(email, code);
+    if (
+      existingVerification?.updatedAt &&
+      Date.now() - new Date(existingVerification.updatedAt).getTime() <
+        RESEND_COOLDOWN_MS
+    ) {
+      return {
+        success: false,
+        message: "Please wait 60 seconds before requesting another code.",
+      };
+    }
 
-    // OTP hết hạn sau 5 phút
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
 
-    // Lưu OTP vào MongoDB
+    const otpHash = hashCode(code);
+    const expiresAt = new Date(Date.now() + OTP_TTL_MS);
+
     await EmailVerification.findOneAndUpdate(
       { email },
       {
         $set: {
-          codeHash,
+          email: email,
+          otpHash,
           expiresAt,
           attempts: 0,
           verifiedAt: null,
@@ -74,312 +92,278 @@ export async function sendVerificationAction(
       },
       {
         upsert: true,
-        new: true,
+        returnDocument: "after",
+        runValidators: true,
+        setDefaultsOnInsert: true,
       },
     );
 
-    // Gửi email
-    await sendVerificationEmail(email, code);
+    try {
+      await sendVerificationEmail(email, code);
+    } catch (error) {
+      // Chỉ xóa OTP vừa tạo, không xóa OTP mới hơn.
+      await EmailVerification.deleteOne({ email, otpHash });
+
+      console.error("Failed to send verification email:", error);
+
+      return {
+        success: false,
+        message: "Unable to send verification email. Please try again later.",
+      };
+    }
 
     return {
       success: true,
-      message: "Verification code sent successfully!",
+      message: "Verification code sent successfully.",
     };
   } catch (error) {
-    console.error("Send verification error:", error);
+    console.error("sendVerificationAction error:", error);
 
     return {
       success: false,
-      message: "Unable to send verification code!",
+      message: "Something went wrong. Please try again later.",
     };
   }
 }
 
-export interface VerifyEmailState {
-  success: boolean;
-  message: string;
-}
+// ======================================================
+// STEP 2: VERIFY OTP
+// ======================================================
 
-export async function verifyEmailAction(
-  prevState: VerifyEmailState | null,
+export async function verifyCodeAction(
+  _prevState: ActionState,
   formData: FormData,
-): Promise<VerifyEmailState> {
+): Promise<ActionState> {
+  const email = normalizeEmail(formData.get("email"));
+  const code = String(formData.get("code") ?? "").trim();
+
+  if (!isValidEmail(email)) {
+    return {
+      success: false,
+      message: "Invalid email address.",
+    };
+  }
+
+  if (!/^\d{6}$/.test(code)) {
+    return {
+      success: false,
+      message: "Please enter a valid 6-digit verification code.",
+    };
+  }
+
   try {
-    await connectToDatabase();
-
-    const email = normalizeEmail(String(formData.get("email") || ""));
-
-    const code = String(formData.get("code") || "").trim();
-
-    if (!email || !code) {
-      return {
-        success: false,
-        message: "Please enter email and verification code!",
-      };
-    }
-
-    if (!/^\d{6}$/.test(code)) {
-      return {
-        success: false,
-        message: "Invalid verification code!",
-      };
-    }
+    await connectDB();
 
     const verification = await EmailVerification.findOne({ email });
 
     if (!verification) {
       return {
         success: false,
-        message: "Verification code not found!",
+        message:
+          "Verification code is invalid or expired. Please request a new code.",
       };
     }
 
-    // Kiểm tra hết hạn
-    if (verification.expiresAt <= new Date()) {
-      await EmailVerification.deleteOne({ email });
+    if (verification.verifiedAt) {
+      return {
+        success: true,
+        message: "Email has already been verified.",
+      };
+    }
 
+    if (verification.expiresAt.getTime() <= Date.now()) {
       return {
         success: false,
-        message: "Verification code has expired!",
+        message: "Verification code has expired. Please request a new code.",
       };
     }
 
-    // Giới hạn số lần nhập sai
-    if (verification.attempts >= 5) {
-      await EmailVerification.deleteOne({ email });
-
+    if (verification.attempts >= MAX_OTP_ATTEMPTS) {
       return {
         success: false,
-        message: "Too many attempts. Request a new code!",
+        message: "Too many incorrect attempts. Please request a new code.",
       };
     }
 
-    const inputHash = hashOTP(email, code);
+    const otpHash = hashCode(code);
 
-    // So sánh OTP
-    if (inputHash !== verification.codeHash) {
+    if (otpHash !== verification.otpHash) {
       await EmailVerification.updateOne(
         {
           _id: verification._id,
-          attempts: verification.attempts,
+          verifiedAt: null,
+          expiresAt: { $gt: new Date() },
+          attempts: { $lt: MAX_OTP_ATTEMPTS },
         },
         {
-          $inc: {
-            attempts: 1,
-          },
+          $inc: { attempts: 1 },
         },
       );
 
       return {
         success: false,
-        message: "Incorrect verification code!",
+        message: "Incorrect verification code.",
       };
     }
 
-    // Đánh dấu email đã xác minh
-    await EmailVerification.updateOne(
+    // Cập nhật có điều kiện để không xác minh một OTP đã hết hạn
+    // hoặc đã bị thay thế bởi một mã mới.
+    const verified = await EmailVerification.findOneAndUpdate(
       {
         _id: verification._id,
-        codeHash: inputHash,
+        otpHash,
+        verifiedAt: null,
         expiresAt: { $gt: new Date() },
+        attempts: { $lt: MAX_OTP_ATTEMPTS },
       },
       {
         $set: {
           verifiedAt: new Date(),
         },
       },
+      {
+        new: true,
+      },
     );
+
+    if (!verified) {
+      return {
+        success: false,
+        message: "Verification code is invalid or expired. Please try again.",
+      };
+    }
 
     return {
       success: true,
-      message: "Email verified successfully!",
+      message: "Email verified successfully.",
     };
   } catch (error) {
-    console.error("Verify email error:", error);
+    console.error("verifyCodeAction error:", error);
 
     return {
       success: false,
-      message: "Unable to verify email!",
+      message: "Something went wrong. Please try again later.",
     };
   }
 }
 
-export interface RegisterState {
-  success: boolean;
-  message: string;
+// ======================================================
+// STEP 3: REGISTER USER
+// ======================================================
 
-  fields?: {
-    fullName: string;
-    email: string;
-    phone: string;
-  };
-}
-
-export async function registerAction(
-  prevState: RegisterState | null,
+export async function registerUserAction(
+  _prevState: ActionState,
   formData: FormData,
-): Promise<RegisterState> {
-  try {
-    await connectToDatabase();
+): Promise<ActionState> {
+  const email = normalizeEmail(formData.get("email"));
+  const fullName = String(formData.get("fullName") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
 
-    const fullName = String(formData.get("fullName") || "").trim();
-
-    const email = normalizeEmail(String(formData.get("email") || ""));
-
-    const password = String(formData.get("password") || "");
-
-    const phone = String(formData.get("phone") || "").trim();
-
-    const fields = {
-      fullName,
-      email,
-      phone,
+  if (!isValidEmail(email)) {
+    return {
+      success: false,
+      message: "Invalid email address.",
     };
+  }
 
-    // Validate data
-    if (!fullName || !email || !password) {
-      return {
-        success: false,
-        message: "Please fill in all required fields!",
-        fields,
-      };
-    }
+  if (fullName.length < 2 || fullName.length > 100) {
+    return {
+      success: false,
+      message: "Full name must be between 2 and 100 characters.",
+    };
+  }
 
-    if (password.length < 6) {
-      return {
-        success: false,
-        message: "Password must contain at least 6 characters!",
-        fields,
-      };
-    }
+  if (phone.length > 20) {
+    return {
+      success: false,
+      message: "Phone number cannot exceed 20 characters.",
+    };
+  }
 
-    // Check email verification
+  if (password.length < 6) {
+    return {
+      success: false,
+      message: "Password must contain at least 6 characters.",
+    };
+  }
+
+  if (password.length > 72) {
+    return {
+      success: false,
+      message: "Password is too long.",
+    };
+  }
+
+  try {
+    await connectDB();
+
+    // Không được tin email từ hidden input.
+    // Kiểm tra lại trạng thái xác minh trong database.
     const verification = await EmailVerification.findOne({
       email,
-    });
+      verifiedAt: {
+        $gte: new Date(Date.now() - VERIFIED_TTL_MS),
+      },
+    }).lean();
 
-    if (
-      !verification ||
-      !verification.verifiedAt ||
-      verification.expiresAt <= new Date()
-    ) {
+    if (!verification) {
       return {
         success: false,
-        message: "Please verify your email first!",
-        fields,
+        message: "Please verify your email before creating an account.",
       };
     }
 
-    // Check duplicate email
-    const existingUser = await User.findOne({
-      email,
-    });
+    const existingUser = await User.findOne({ email }).select("_id").lean();
 
     if (existingUser) {
       return {
         success: false,
-        message: "This email has already been used!",
-        fields,
+        message: "Unable to create an account with this email address.",
       };
     }
 
-    // Hash password
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 12);
 
-    // Create new user
-    const newUser = await User.create({
+    await User.create({
       fullName,
       email,
-      passwordHash,
       phone,
+      passwordHash,
+      authProvider: "LOCAL",
       role: "CUSTOMER",
+      isActive: true,
     });
 
-    // Remove verification record
+    // Xóa trạng thái xác minh sau khi tạo tài khoản thành công.
     await EmailVerification.deleteOne({
-      email,
-    });
-
-    // Create session
-    await createSession({
-      userId: newUser._id.toString(),
-      role: newUser.role,
-      fullName: newUser.fullName,
+      _id: verification._id,
+      verifiedAt: verification.verifiedAt,
     });
 
     return {
       success: true,
-      message: "Registration successful.",
+      message: "Account created successfully.",
     };
   } catch (error) {
-    console.error("Register error:", error);
-
-    return {
-      success: false,
-      message: "An error occurred during registration!",
-    };
-  }
-}
-
-// LOGIN ACTION
-export interface LoginState {
-  success: boolean;
-  message: string;
-}
-
-export async function loginAction(
-  prevState: LoginState | null,
-  formData: FormData,
-): Promise<LoginState> {
-  try {
-    await connectToDatabase();
-
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-
-    if (!email || !password) {
+    // Xử lý trường hợp hai request cùng đăng ký một email.
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === 11000
+    ) {
       return {
         success: false,
-        message: "Please enter your email and password",
+        message: "Unable to create an account with this email address.",
       };
     }
 
-    const user = await User.findOne({
-      email: email.toLowerCase(),
-      isActive: true,
-    });
-    if (!user) {
-      return { success: false, message: "Incorrect email or password" };
-    }
+    console.error("registerUserAction error:", error);
 
-    if (!user.passwordHash) {
-      return {
-        success: false,
-        message: "Please sign in using Google.",
-      };
-    }
-
-    const isPasswordMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isPasswordMatch) {
-      return { success: false, message: "Incorrect email or password!" };
-    }
-
-    await createSession({
-      userId: user._id.toString(),
-      role: user.role,
-      fullName: user.fullName,
-    });
-
-    return { success: true, message: "Login successful" };
-  } catch (error: any) {
     return {
       success: false,
-      message: error.message || "A system error occurred during login!",
+      message: "Unable to create your account. Please try again later.",
     };
   }
-}
-
-export async function logoutAction() {
-  await deleteSession();
-  return { success: true, message: "Logged out" };
 }

@@ -1,11 +1,13 @@
 "use server";
 
-import { connectToDatabase } from "@/lib/data/mongoose";
-import { getSession } from "@/lib/auth/session";
+import { authOptions } from "@/lib/auth/auth";
+import { connectDB } from "@/lib/data/mongoose";
 import { User } from "@/models/User";
+import { getServerSession } from "next-auth";
+import { getSession } from "next-auth/react";
 
-export async function getUserAccount() {
-  const session = await getSession();
+export async function getUserAccountAction() {
+  const session = await getServerSession(authOptions);
 
   if (!session?.userId) {
     return {
@@ -15,7 +17,7 @@ export async function getUserAccount() {
   }
 
   try {
-    await connectToDatabase();
+    await connectDB();
 
     const rawUser = await User.findById(session.userId)
       .select(
@@ -62,7 +64,7 @@ export async function getUserAccount() {
 export async function updateUserAccount(formData: FormData) {
   try {
     // 1. Check authentication
-    const session = await getSession();
+    const session = await getServerSession(authOptions);
 
     if (!session?.userId) {
       return {
@@ -218,7 +220,7 @@ export async function updateUserAccount(formData: FormData) {
     }
 
     // 9. Connect to database
-    await connectToDatabase();
+    await connectDB();
 
     console.log(
       `User: ${JSON.stringify({
