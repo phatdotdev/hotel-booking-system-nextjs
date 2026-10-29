@@ -15,8 +15,8 @@ import {
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { logoutAction } from "@/actions/auth";
-import Avatar from "./avatar";
-import Badge from "./badge";
+import Avatar from "../common/avatar";
+import Badge from "../common/badge";
 
 type UserData = {
   userId?: string;
@@ -115,7 +115,7 @@ export default function UserDropdown({ user, onSignOut }: UserDropdownProps) {
         aria-label="User menu"
         className="flex items-center gap-2 rounded-full outline-none transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
       >
-        <Avatar src={currentUser.avatarUrl} size="sm" />
+        <Avatar src={currentUser.avatarUrl} size="xs" />
 
         <ChevronDown
           className={`hidden h-4 w-4 text-muted-foreground transition-transform sm:block ${
@@ -131,25 +131,27 @@ export default function UserDropdown({ user, onSignOut }: UserDropdownProps) {
           className="absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-xl border border-gray-200 bg-white p-2 shadow-xl dark:border-gray-800 dark:bg-gray-900"
         >
           {/* User Info */}
-          <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-800/60">
-            <Avatar src={currentUser.avatarUrl} size="sm" />
+          <Link href="/dashboard">
+            <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-800/60">
+              <Avatar src={currentUser.avatarUrl} size="sm" />
 
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
-                {currentUser.name}
-              </p>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+                  {currentUser.name}
+                </p>
 
-              <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
-                {currentUser.email}
-              </p>
+                <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
+                  {currentUser.email}
+                </p>
+              </div>
+
+              {currentUser.isPro && (
+                <Badge variant="brand" size="sm" className="shrink-0 font-bold">
+                  PRO
+                </Badge>
+              )}
             </div>
-
-            {currentUser.isPro && (
-              <Badge variant="brand" size="sm" className="shrink-0 font-bold">
-                PRO
-              </Badge>
-            )}
-          </div>
+          </Link>
 
           <div className="my-2 border-t border-gray-100 dark:border-gray-800" />
 

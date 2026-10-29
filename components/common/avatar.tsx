@@ -6,20 +6,29 @@ import Image from "next/image";
 type AvatarProps = {
   src?: string | null;
   alt?: string;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
   className?: string;
 };
 
 const sizeStyles = {
+  xs: "w-6 h-6",
   sm: "w-8 h-8",
   md: "w-10 h-10",
   lg: "w-12 h-12",
 };
 
 const svgSizes = {
-  sm: "w-10 h-10 -left-1",
-  md: "w-12 h-12 -left-1",
-  lg: "w-14 h-14 -left-1",
+  xs: "w-6 h-6 left-0",
+  sm: "w-8 h-8 left-0",
+  md: "w-10 h-10 left-0",
+  lg: "w-12 h-12 left-0",
+};
+
+const imageSizes = {
+  xs: "24px",
+  sm: "32px",
+  md: "40px",
+  lg: "48px",
 };
 
 export default function Avatar({
@@ -58,7 +67,7 @@ export default function Avatar({
           src={src}
           alt={alt}
           fill
-          sizes="48px"
+          sizes={imageSizes[size]}
           className="object-cover"
           onError={() => setHasError(true)}
         />

@@ -1,6 +1,9 @@
 import type { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
+import { findOrCreateGoogleUser } from "@/lib/auth/google-user";
+import { createSession } from "./session";
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
@@ -13,9 +16,7 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
 
-  secret:
-    process.env.NEXTAUTH_SECRET ||
-    "default_super_secret_key_change_me_in_production",
+  secret: process.env.NEXTAUTH_SECRET,
 
   callbacks: {
     async signIn({ account, profile }) {
@@ -32,12 +33,29 @@ export const authOptions: NextAuthOptions = {
           email_verified?: boolean;
         };
 
-        console.log(googleProfile);
+        // 1. Kiểm tra email Google
+        if (!googleProfile.email || googleProfile.email_verified !== true) {
+          return false;
+        }
 
+        // 2. Tìm user cũ hoặc tạo user mới
+        const user = await findOrCreateGoogleUser(googleProfile);
+
+        if (!user || !user.isActive) {
+          return false;
+        }
+
+        // 3. Tạo custom session giống email/password
+        await createSession({
+          userId: user._id.toString(),
+          fullName: user.fullName,
+          role: user.role,
+        });
+
+        // 4. Cho phép đăng nhập
         return true;
       } catch (error) {
         console.error("Google sign-in error:", error);
-
         return false;
       }
     },

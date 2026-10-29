@@ -1,4 +1,5 @@
 import { ComponentPropsWithoutRef, ReactNode } from "react";
+import { cn } from "cn";
 
 type ButtonProps = {
   children?: ReactNode;
@@ -11,27 +12,46 @@ export default function Button({
   leftIcon,
   rightIcon,
   type = "button",
-  className = "",
+  className,
+  disabled,
   ...props
 }: ButtonProps) {
   return (
     <button
       type={type}
-      className={`inline-flex items-center justify-center text-white bg-brand hover:bg-brand-strong box-border border border-transparent focus:ring-4 focus:ring-brand-medium shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-2 focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed rounded ${className}`}
+      disabled={disabled}
+      className={cn(
+        // Layout
+        "inline-flex h-9 shrink-0 items-center justify-center",
+        "gap-1.5 rounded-lg px-3",
+
+        // Typography
+        "text-sm font-medium leading-none whitespace-nowrap",
+
+        // Colors
+        "border border-transparent bg-brand text-white",
+        "hover:bg-brand-strong",
+
+        // Focus
+        "outline-none transition-colors",
+        "focus-visible:ring-3 focus-visible:ring-brand-medium",
+
+        // Disabled
+        "disabled:pointer-events-none",
+        "disabled:cursor-not-allowed disabled:opacity-50",
+
+        className,
+      )}
       {...props}
     >
       {leftIcon && (
-        <span className="me-1.5 -ms-0.5 inline-flex items-center">
-          {leftIcon}
-        </span>
+        <span className="inline-flex shrink-0 items-center">{leftIcon}</span>
       )}
 
       {children}
 
       {rightIcon && (
-        <span className="ms-1.5 -me-0.5 inline-flex items-center">
-          {rightIcon}
-        </span>
+        <span className="inline-flex shrink-0 items-center">{rightIcon}</span>
       )}
     </button>
   );

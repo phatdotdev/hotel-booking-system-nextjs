@@ -1,7 +1,7 @@
 "use server";
 
-import { connectToDatabase } from "@/lib/mongoose";
-import { getSession } from "@/lib/session";
+import { connectToDatabase } from "@/lib/data/mongoose";
+import { getSession } from "@/lib/auth/session";
 import { User } from "@/models/User";
 
 export async function getUserAccount() {

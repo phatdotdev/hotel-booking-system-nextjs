@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import "./globals.css";
-import { getSession } from "@/lib/session";
+import { getSession } from "@/lib/auth/session";
 import Header from "@/components/common/header";
 
 export const metadata: Metadata = {
