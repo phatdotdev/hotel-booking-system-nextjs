@@ -110,7 +110,7 @@ export default function PartnerProfilePage() {
     setMessage("");
 
     try {
-      const response = await fetch("/api/partner", {
+      const response = await fetch("/api/partners", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

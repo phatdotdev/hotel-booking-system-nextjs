@@ -12,15 +12,19 @@ import { Suspense } from "react";
 import { getServerSession } from "next-auth";
 import Button from "@/components/common/button";
 import InputField from "@/components/common/input-field";
+import { authOptions } from "@/lib/auth/auth";
+import { connection } from "next/server";
 
 async function HeaderContent() {
-  const session = await getServerSession();
+  await connection();
+
+  const session = await getServerSession(authOptions);
   const user = session?.user;
 
   const navigations = [
     {
       label: "Busniness",
-      link: "/dashboard",
+      link: "/partner",
       icon: BriefcaseBusiness,
     },
     {

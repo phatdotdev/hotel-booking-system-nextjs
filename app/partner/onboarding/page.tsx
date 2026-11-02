@@ -36,7 +36,6 @@ export default function PartnerOnboardingPage() {
         }
 
         if (response.status === 404) {
-          // Chưa có hồ sơ: cho phép đăng ký mới.
           setCheckingPartner(false);
           return;
         }

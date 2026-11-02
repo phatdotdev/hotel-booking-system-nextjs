@@ -3,9 +3,11 @@ import { connectDB } from "@/lib/data/mongoose";
 import { User } from "@/models/User";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 async function DashboardContent() {
+  await connection();
   const session = await getServerSession(authOptions);
 
   if (!session?.userId) {
