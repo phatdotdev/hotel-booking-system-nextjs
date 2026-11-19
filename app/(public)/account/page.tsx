@@ -91,7 +91,7 @@ function AccountContent() {
   };
 
   if (isPending || !user) {
-    return <LoadingOverlay />;
+    return <LoadingOverlay isLoading />;
   }
 
   return (
@@ -440,7 +440,7 @@ function AccountContent() {
 
 export default function AccountPage() {
   return (
-    <Suspense fallback={<LoadingOverlay />}>
+    <Suspense fallback={<LoadingOverlay isLoading />}>
       <AccountContent />
     </Suspense>
   );

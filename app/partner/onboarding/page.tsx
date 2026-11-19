@@ -17,6 +17,7 @@ export default function PartnerOnboardingPage() {
   const router = useRouter();
 
   const [checkingPartner, setCheckingPartner] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -74,7 +75,6 @@ export default function PartnerOnboardingPage() {
   });
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
   function handleChange(

@@ -1,5 +1,17 @@
 import nodemailer from "nodemailer";
 
+export async function sendBookingConfirmation(input: { email: string; name: string; code: string; hotel: string; room: string; checkIn: string; checkOut: string; total: number }) {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) throw new Error("Email chưa được cấu hình.");
+  const safe = (value: string) => value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!);
+  const transporter = nodemailer.createTransport({ service: "gmail", auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_APP_PASSWORD } });
+  await transporter.sendMail({
+    from: `Hotel GO <${process.env.EMAIL_USER}>`, to: input.email,
+    subject: `Xác nhận đặt phòng ${input.code}`,
+    text: `Xin chào ${input.name},\nMã đặt phòng: ${input.code}\nKhách sạn: ${input.hotel}\nPhòng: ${input.room}\nNhận phòng: ${input.checkIn}\nTrả phòng: ${input.checkOut}\nTổng tiền: ${input.total.toLocaleString("vi-VN")} VND`,
+    html: `<h2>Xác nhận đặt phòng ${safe(input.code)}</h2><p>Xin chào ${safe(input.name)},</p><p>Khách sạn: ${safe(input.hotel)}<br>Loại phòng: ${safe(input.room)}<br>Nhận phòng: ${safe(input.checkIn)}<br>Trả phòng: ${safe(input.checkOut)}<br>Tổng tiền: ${input.total.toLocaleString("vi-VN")} VND</p>`,
+  });
+}
+
 export async function sendVerificationEmail(email: string, code: string) {
   // 1. Kiểm tra biến môi trường
   if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
@@ -96,8 +108,8 @@ export async function sendVerificationEmail(email: string, code: string) {
     });
 
     return { success: true, messageId: info.messageId };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Lỗi gửi email:", error);
-    throw new Error(`Không thể gửi email xác thực: ${error.message}`);
+    throw new Error(`Không thể gửi email xác thực: ${error instanceof Error ? error.message : String(error)}`);
   }
 }

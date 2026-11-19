@@ -28,6 +28,7 @@ const BookingSchema = new Schema(
       index: true,
     },
     assignedRoomId: { type: Schema.Types.ObjectId, ref: "Room", default: null },
+    specialRequests: { type: String, default: "", maxlength: 1000 },
     checkInDate: { type: Date, required: true, index: true },
     checkOutDate: { type: Date, required: true, index: true },
     guestDetails: {
@@ -59,6 +60,10 @@ const BookingSchema = new Schema(
       enum: ["CREDIT_CARD", "MOMO", "PAY_AT_HOTEL", "VNPAY"],
       default: "PAY_AT_HOTEL",
     },
+    paymentRequestId: { type: String, default: null },
+    paymentUrl: { type: String, default: null },
+    paymentTransactionId: { type: String, default: null },
+    emailSentAt: { type: Date, default: null },
   },
   { timestamps: true },
 );

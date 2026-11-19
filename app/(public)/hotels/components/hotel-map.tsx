@@ -11,6 +11,7 @@ import MapController from "./map-controller";
 
 interface HotelMapProps {
   hotels: HotelMapItem[];
+  activeHotelId?: string | null;
 
   onSelectHotel?: (hotel: HotelMapItem) => void;
 
@@ -19,6 +20,7 @@ interface HotelMapProps {
 
 export default function HotelMap({
   hotels,
+  activeHotelId,
   onSelectHotel,
   height = 500,
 }: HotelMapProps) {
@@ -44,7 +46,7 @@ export default function HotelMap({
         />
 
         {/* Auto fit map */}
-        <MapController positions={positions} />
+        <MapController positions={positions} activePosition={hotels.find((hotel) => hotel._id === activeHotelId)?.location.coordinates} />
 
         {/* Hotels */}
         {hotels.map((hotel) => (

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Building2, MapPin, Plus, Pencil, LoaderCircle } from "lucide-react";
 
 type Hotel = {
-  id: string;
+  _id: string;
   name: string;
   description: string;
   phone: string;
@@ -137,7 +137,7 @@ export default function PartnerHotelsPage() {
             <div className="mt-6 grid gap-4">
               {hotels.map((hotel) => (
                 <article
-                  key={hotel.id}
+                  key={hotel._id}
                   className="rounded-xl border p-4 sm:p-5"
                 >
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -168,7 +168,7 @@ export default function PartnerHotelsPage() {
                     </div>
 
                     <Link
-                      href={`/partner/hotels/${hotel.id}/edit`}
+                      href={`/partner/hotels/${hotel._id}/edit`}
                       className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium hover:bg-muted"
                     >
                       <Pencil className="h-4 w-4" />

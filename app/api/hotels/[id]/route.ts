@@ -11,6 +11,20 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
+export async function GET(_request: Request, { params }: RouteContext) {
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+  if (!userId) return NextResponse.json({ message: "Vui lòng đăng nhập." }, { status: 401 });
+  const { id } = await params;
+  if (!Types.ObjectId.isValid(id)) return NextResponse.json({ message: "ID khách sạn không hợp lệ." }, { status: 400 });
+  await connectDB();
+  const partner = await Partner.findOne({ ownerUserId: userId }).select("_id").lean();
+  if (!partner) return NextResponse.json({ message: "Không tìm thấy đối tác." }, { status: 404 });
+  const hotel = await Hotel.findOne({ _id: id, partnerId: partner._id }).lean();
+  if (!hotel) return NextResponse.json({ message: "Không tìm thấy khách sạn." }, { status: 404 });
+  return NextResponse.json({ success: true, data: { ...hotel, _id: hotel._id.toString() } });
+}
+
 export async function PATCH(request: Request, { params }: RouteContext) {
   try {
     const session = await getServerSession(authOptions);

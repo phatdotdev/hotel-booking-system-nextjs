@@ -353,7 +353,7 @@ export default function NewHotelPage() {
               <p className="text-xs text-muted-foreground mt-1">
                 Sau khi upload xong, lưu URL trả về bằng lệnh:
                 <br />
-                <code>setValue("thumbnail", "url-anh")</code>
+                <code>{'setValue("thumbnail", "url-anh")'}</code>
               </p>
             </div>
 

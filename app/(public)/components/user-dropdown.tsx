@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   User,
+  CalendarDays,
   Settings,
   ShieldCheck,
   Bell,
@@ -143,6 +144,13 @@ export default function UserDropdown({ user, onSignOut }: UserDropdownProps) {
               href="/account"
               icon={<User />}
               label="Account"
+              onClick={() => setIsOpen(false)}
+            />
+
+            <DropdownLink
+              href="/account/bookings"
+              icon={<CalendarDays />}
+              label="Đơn đặt phòng"
               onClick={() => setIsOpen(false)}
             />
 

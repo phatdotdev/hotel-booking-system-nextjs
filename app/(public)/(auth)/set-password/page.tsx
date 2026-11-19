@@ -3,10 +3,11 @@
 import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Lock, ShieldCheck, ArrowLeft } from "lucide-react";
+import { signIn } from "next-auth/react";
 import Link from "next/link";
 import InputField from "@/components/common/input-field";
 import Button from "@/components/common/button";
-import Badge from "@/components/common/badge";
+import { Badge } from "@/components/ui/badge";
 
 function SetPasswordForm() {
   const searchParams = useSearchParams();
@@ -89,9 +90,13 @@ function SetPasswordForm() {
           Set Your Password
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Create a password to sign in using your email next time
+          Sign in with Google using this email, then create a password for future visits.
         </p>
       </div>
+
+      <button type="button" onClick={() => signIn("google", { callbackUrl: `/set-password?email=${encodeURIComponent(email)}` })} className="w-full rounded-lg border px-4 py-2 text-sm font-medium">
+        Sign in with Google to verify this email
+      </button>
 
       {/* Inputs */}
       <InputField
@@ -131,7 +136,7 @@ function SetPasswordForm() {
       {error && (
         <div className="mt-4">
           <Badge
-            variant="danger"
+            variant="destructive"
             className="block w-full py-1.5 px-3 text-center text-sm font-medium"
           >
             {error}
@@ -142,7 +147,7 @@ function SetPasswordForm() {
       {success && (
         <div className="mt-4">
           <Badge
-            variant="success"
+            variant="secondary"
             className="block w-full py-1.5 px-3 text-center text-sm font-medium bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300"
           >
             <div className="inline-flex items-center justify-center gap-1.5">

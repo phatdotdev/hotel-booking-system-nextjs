@@ -95,7 +95,7 @@ export default function Home() {
           </div>
 
           {/* Search box */}
-          <div className="mx-auto mt-10 max-w-5xl rounded-2xl bg-white p-3 shadow-2xl">
+          <form action="/hotels" className="mx-auto mt-10 max-w-5xl rounded-2xl bg-white p-3 shadow-2xl">
             <div className="grid gap-2 md:grid-cols-[1.5fr_1fr_1fr_auto]">
               {/* Destination */}
               <div className="flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors hover:bg-muted">
@@ -105,9 +105,7 @@ export default function Home() {
                   <p className="text-xs font-medium text-muted-foreground">
                     Điểm đến
                   </p>
-                  <p className="mt-1 text-sm font-medium text-foreground">
-                    Bạn muốn đi đâu?
-                  </p>
+                  <input name="search" aria-label="Điểm đến" placeholder="Bạn muốn đi đâu?" className="mt-1 w-full bg-transparent text-sm font-medium text-foreground outline-none" />
                 </div>
               </div>
 
@@ -139,12 +137,12 @@ export default function Home() {
                 </div>
               </div>
 
-              <Button className="h-auto min-h-12 rounded-xl bg-booking px-6 text-booking-foreground hover:bg-booking/90">
+              <Button type="submit" className="h-auto min-h-12 rounded-xl bg-booking px-6 text-booking-foreground hover:bg-booking/90">
                 <Search className="mr-2 size-4" />
                 Tìm kiếm
               </Button>
             </div>
-          </div>
+          </form>
         </div>
       </section>
 

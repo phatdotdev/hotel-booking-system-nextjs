@@ -47,38 +47,28 @@ export default function RegisterForm() {
   // Handle result of sending OTP
   useEffect(() => {
     if (!sendState) return;
-
-    if (sendState.success) {
-      setErrorMessage("");
-      setStep(2);
-    } else {
-      setErrorMessage(sendState.message);
-    }
+    queueMicrotask(() => {
+      if (sendState.success) { setErrorMessage(""); setStep(2); }
+      else setErrorMessage(sendState.message);
+    });
   }, [sendState]);
 
   // Handle result of verifying OTP
   useEffect(() => {
     if (!verifyState) return;
-
-    if (verifyState.success) {
-      setVerifiedEmail(email);
-      setErrorMessage("");
-      setStep(3);
-    } else {
-      setErrorMessage(verifyState.message);
-    }
+    queueMicrotask(() => {
+      if (verifyState.success) { setVerifiedEmail(email); setErrorMessage(""); setStep(3); }
+      else setErrorMessage(verifyState.message);
+    });
   }, [verifyState, email]);
 
   // Handle result of registering account
   useEffect(() => {
     if (!registerState) return;
-
-    if (registerState.success) {
-      router.push("/login");
-      router.refresh();
-    } else {
-      setErrorMessage(registerState.message);
-    }
+    queueMicrotask(() => {
+      if (registerState.success) { router.push("/login"); router.refresh(); }
+      else setErrorMessage(registerState.message);
+    });
   }, [registerState, router]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {

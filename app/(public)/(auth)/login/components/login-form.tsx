@@ -99,9 +99,8 @@ export default function LoginForm() {
         <div className="mt-4">
           <Badge
             variant="danger"
-            children={error}
             className="block w-full h-6"
-          />
+          >{error}</Badge>
         </div>
       )}
 

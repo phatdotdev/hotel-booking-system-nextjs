@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { User } from "@/models/User";
 import { connectDB } from "@/lib/data/mongoose";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth/auth";
 
 export async function POST(req: Request) {
   try {
@@ -12,6 +14,11 @@ export async function POST(req: Request) {
         { message: "Email and new password are required." },
         { status: 400 },
       );
+    }
+
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email || session.user.email.toLowerCase() !== String(email).trim().toLowerCase()) {
+      return NextResponse.json({ message: "Vui lòng đăng nhập bằng Google với đúng email trước khi đặt mật khẩu." }, { status: 401 });
     }
 
     if (newPassword.length < 6) {

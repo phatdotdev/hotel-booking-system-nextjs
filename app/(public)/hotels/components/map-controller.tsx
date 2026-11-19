@@ -6,10 +6,15 @@ import L from "leaflet";
 
 interface MapControllerProps {
   positions: [number, number][];
+  activePosition?: [number, number];
 }
 
-export default function MapController({ positions }: MapControllerProps) {
+export default function MapController({ positions, activePosition }: MapControllerProps) {
   const map = useMap();
+
+  useEffect(() => {
+    if (activePosition) map.flyTo([activePosition[1], activePosition[0]], Math.max(map.getZoom(), 13));
+  }, [activePosition, map]);
 
   useEffect(() => {
     if (positions.length === 0) return;

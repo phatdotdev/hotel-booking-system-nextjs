@@ -118,7 +118,7 @@ async function HeaderContent() {
 
           {/* Search */}
           <form
-            action="/properties"
+            action="/hotels"
             method="GET"
             className="flex min-w-0 flex-1 items-center gap-2"
           >

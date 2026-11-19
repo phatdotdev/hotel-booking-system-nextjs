@@ -50,17 +50,7 @@ export async function GET() {
       .lean();
 
     return NextResponse.json({
-      hotels: hotels.map((hotel) => ({
-        id: hotel._id.toString(),
-        name: hotel.name,
-        description: hotel.description,
-        phone: hotel.phone,
-        country: hotel.country,
-        city: hotel.city,
-        address: hotel.address,
-        status: hotel.status,
-        createdAt: hotel.createdAt,
-      })),
+      hotels: hotels.map((hotel) => ({ ...hotel, _id: hotel._id.toString() })),
     });
   } catch (error) {
     console.error("Get hotels error:", error);
